@@ -2,95 +2,73 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 
 function Todos() {
-    const [newTodo, setNewTodo] = useState({});
     const [allTodo, setAllTodo] = useState([]);
     const [isEditing, setIsEditing] = useState(false);
-    const [flag, setFlag] = useState(false);
-    const handleGetAllTodos = async () => {
+    const handleGetAllTodos = async () => { 
+        const res = await axios.get("http://localhost:3000/api/todos");
+        setAllTodo(res.data);
+        
+    };
+
+    useEffect(() => {
+        handleGetAllTodos();
+        document.title = "Todos";
+    },[]);
+
+    const [newTodo, setNewTodo] = useState({nameTodo: ""});
+    const handleGetInput = (e) => {
+        setNewTodo({ ...newTodo, [e.target.name]: e.target.value });
+    };
+    const handleAdd = async () => {
+        if (newTodo.nameTodo === "") {
+            window.alert("Vui lòng nhập todo");
+            return
+        }   
+            const res = await axios.post( "http://localhost:3000/api/todos",
+                    {
+                        ...newTodo,
+                        id: Math.floor(Math.random() * 999999)
+                    }
+                );
+                setNewTodo({ nameTodo: "" });
+                setAllTodo(res.data);
+    };
+
+    const handleEdit = (item) => {
+        setNewTodo({ ...item, nameTodo: item.nameTodo });
+        setIsEditing(true);
+    };
+
+    const handleSave = async () => {
+        const res = await axios.put(`http://localhost:3000/api/todos/${newTodo.id}`,{ ...newTodo });
+        setNewTodo({ nameTodo: "" });
+        setIsEditing(false);
+        setAllTodo(res.data);
+    };
+
+    const handleDelete = async (id) => {
+        const confirm = window.confirm("Xác nhận xóa");
+        if (confirm) {
+            const res = await axios.delete(`http://localhost:3000/api/todos/${id}`);
+            setAllTodo(res.data);
+        }
+    };
+
+    const handleDeleteAll = async () => {
         try {
-            const res = await axios.get("http://localhost:3000/api/todos");
+            const res = await axios.delete(`http://localhost:3000/api/todos`);    
             setAllTodo(res.data);
         } catch (error) {
             console.log(error);
         }
     };
 
-    useEffect(() => {
-        handleGetAllTodos();
-    }, [flag]);
-
-    const handleGetInput = (e) => {
-        setNewTodo({ ...newTodo, [e.target.name]: e.target.value });
-    };
-    const handleAdd = async () => {
-        if (newTodo.name === "") {
-            window.alert("Vui lòng nhập todo");
-        } else {
-            try {
-                const res = await axios.post(
-                    "http://localhost:3000/api/todos",
-                    {
-                        ...newTodo,
-                        id: Math.floor(Math.random() * 999999),
-                        completed: false,
-                    }
-                );
-                setNewTodo({ name: "" });
-                
-                setFlag(!flag);
-            } catch (error) {
-                console.log(error);
-            }
-        }
-    };
-
-    const handleEdit = (item) => {
-        setNewTodo(item);
-        setIsEditing(true);
-    };
-
-    const handleSave = async () => {
-        try {
-            const res = await axios.put(
-                `http://localhost:3000/api/todos/${newTodo.id}`,
-                newTodo
-            );
-            setNewTodo({ ...newTodo, name: "" });
-            
-            setFlag(!flag);
-            setIsEditing(false);
-        } catch (error) {
-            console.log(error);
-        }
-    };
-
-    const handleDelete = async (id) => {
-        const confirm = window.confirm("Xác nhận xóa");
-        if (confirm) {
-            const res = await axios.delete(
-                `http://localhost:3000/api/todos/${id}`
-            );
-            setAllTodo(res.data.todo);
-        }
-    };
-
-    const handleDeleteAll = async () => {
-        try {
-            const res = await axios.delete(`http://localhost:3000/api/todos`);
-            
-            setFlag(!flag);
-        } catch (error) {
-            console.log(error);
-        }
-    };
-
     const handleChangeStatus = async (item) => {
-        const res = await axios.patch(`http://localhost:3000/api/todos/${item.id}`,item);
-        
+        const res = await axios.patch(`http://localhost:3000/api/todos/${item.id}`,item);     
         setFlag(!flag);
     };
 
-    const number = allTodo.filter((item) => item.completed === false)
+    const number = allTodo.filter((item) => item.completed === false) 
 
     return (
         <div className="bg-blue-200 w-full h-[750px]">
@@ -104,9 +82,9 @@ function Todos() {
                     type="text"
                     className="border-solid border-2 border-indigo-600 ml-9 rounded-l-lg w-3/4 h-10 pl-4"
                     placeholder="Todo"
-                    name="name"
+                    name="nameTodo"
                     onChange={handleGetInput}
-                    value={newTodo.name}
+                    value={newTodo.nameTodo}
                 />
                 {isEditing ? (
                     <button
@@ -124,11 +102,11 @@ function Todos() {
                     </button>
                 )}
                 <div className="mb-11">
-                    {allTodo.map((item, index) => (
+                    {allTodo?.map((item, index) => (
                         <div key={index} className="flex">
                             <p className="border-solid border-2 bg-white rounded-l-lg ml-9 w-3/6 h-10 pl-4 pt-2 mt-5"
                             style={{textDecoration: item.completed ? 'line-through' : 'none'}}>
-                                {item.name}
+                                {item.nameTodo}
                             </p>
                             <button
                                 onClick={() => handleChangeStatus(item)}
